@@ -12,7 +12,6 @@ class ResetPasswordService
 {
     public function execute(ResetPasswordRequest $request): void
     {
-        $expirationMinutes = env('PASSWORD_RESET_TIMEOUT', 60);
         $passwordReset = PasswordResetToken::where([
             'token' => $request->token,
             'email' => $request->email,
