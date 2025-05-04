@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\SignOutRequest;
 use App\Http\Services\Auth\SignOutService;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class SignOutController extends Controller
 {
@@ -32,13 +33,13 @@ class SignOutController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 401);
+            ], Response::HTTP_UNAUTHORIZED);
             
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Erro durante o logout',
-            ], 500);
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }    
 }
