@@ -34,7 +34,7 @@ Rodar o comando para criar e popular o banco de dados
 sail artisan migrate
 ```
 
-Se o comando acima falhar, rode o comando abaixo para pegar o IP do container do banco de dados e altere o DB_HOST com a saída neste comando.
+Se o comando acima falhar, rode o comando abaixo para pegar o IP do container do banco de dados e altere o DB_HOST com a saída deste comando.
 
 ```bash
 docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' contatos-database-1
