@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Services\Auth\ResetPasswordService;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
 
 class ResetPasswordController extends Controller
 {
@@ -23,6 +24,7 @@ class ResetPasswordController extends Controller
                 'message' => 'Senha redefinida com sucesso',
             ]);
         } catch (\Exception $e) {
+            Log::error($e->getMessage() . ' ' . Response::HTTP_BAD_REQUEST);
             return response()->json([
                 'message' => $e->getMessage(),
             ], Response::HTTP_BAD_REQUEST);

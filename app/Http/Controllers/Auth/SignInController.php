@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\SignInRequest;
 use App\Http\Services\Auth\SignInService;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
 
 class SignInController extends Controller
 {
@@ -24,6 +25,7 @@ class SignInController extends Controller
                 'data' => $response,
             ]);
         } catch (\Exception $e) {
+            Log::error($e->getMessage() . ' ' . Response::HTTP_UNAUTHORIZED);
             return response()->json([
                 'message' => $e->getMessage(),
             ], Response::HTTP_UNAUTHORIZED);
