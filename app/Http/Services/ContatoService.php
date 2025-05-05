@@ -49,8 +49,8 @@ class ContatoService extends Service
     public function findOrFail($id): Model|bool
     {
         try {
-            return $this->model->findOrFail($id);
-        } catch(ModelNotFoundException $e) {
+            return $this->model->where('id', $id)->where('user_id', request()->user()->id)->first();
+        } catch(\Throwable $th) {
             throw new ModelNotFoundException("Contato com ID {$id} não encontrado");
             Log::critical("Erro ao buscar Contato: ". $e->getMessage());
             return false;
