@@ -11,10 +11,8 @@ use App\Http\Services\Document\CpfValidatorService;
 use App\Http\Services\Location\GeocodingService;
 use App\Http\Services\Location\ViaCepService;
 use App\Models\Contato;
-use App\Models\User;
 use Illuminate\Http\{JsonResponse, Request};
 use Illuminate\Support\Facades\Log;
-use stdClass;
 
 class ContatoController extends Controller
 {
