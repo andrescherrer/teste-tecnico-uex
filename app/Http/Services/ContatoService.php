@@ -79,6 +79,33 @@ class ContatoService extends Service
             return false;
         }        
     }
+    
+    public function delete(int $id): bool
+    {
+        try {
+            $contato = $this->model->where('id', $id)
+                                ->where('user_id', request()->user()->id)
+                                ->first();
+
+            if (!$contato) {
+                Log::warning("Tentativa de excluir contato não encontrado ou não autorizado. ID: {$id}");
+                return false;
+            }
+
+            $deleted = $contato->delete();
+
+            if (!$deleted) {
+                Log::error("Falha ao excluir contato ID: {$id} - Nenhuma linha afetada");
+                return false;
+            }
+
+            return true;
+
+        } catch (\Throwable $th) {
+            Log::critical("Erro ao excluir Contato ID {$id}: " . $th->getMessage());
+            return false;
+        }
+    }
 
     private function functionModelName($request, $query)
     {
