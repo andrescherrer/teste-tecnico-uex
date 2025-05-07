@@ -147,9 +147,44 @@ class ContatoController extends Controller
         }
     }
 
-    public function destroy(Contato $contato)
+    public function destroy($id): JsonResponse
     {
-        //
+        try {
+            $deleted = $this->service->delete($id);
+
+            if (!$deleted) {
+                throw new ModelNotFoundException('Contato não encontrado');
+            }
+
+            return response()->json(
+                [
+                    'success' => true,
+                    'message' => 'Contato excluído com sucesso'
+                ],
+                JsonResponse::HTTP_OK
+            );
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Contato não encontrado'
+                ],
+                JsonResponse::HTTP_NOT_FOUND
+            );
+            
+        } catch (\Exception $e) {
+            Log::critical($this->arrayErrorMessage['destroy'] . $e->getMessage());
+            
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => $this->arrayErrorMessage['destroy'],
+                    'error' => $e->getMessage()
+                ],
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
     }
 
     /** Private Methods */
@@ -200,12 +235,17 @@ class ContatoController extends Controller
         return $coordinates;
     }
 
-    private function formatAddressGoogleApi($address, $numero)
+    private function formatAddressGoogleApi(array $address, string $number): string
     {
-        $formated_address = $numero .' '. $address['logradouro'] .' '. $address['bairro'] .' '. $address['localidade'] .' '. $address['uf'] .' '. $address['cep'];
-        $formated_address = str_replace('-', '', $formated_address);
-        $formated_address = str_replace(' ', '+', $formated_address);
-        return $formated_address;
+        if (array_diff(['logradouro', 'bairro', 'localidade', 'uf', 'cep'], array_keys($address))) {
+            throw new \InvalidArgumentException('Campos de endereço incompletos');
+        }
+
+        return str_replace(
+            ['-', ' '],
+            ['', '+'],
+            implode(' ', [$number, ...array_values(array_intersect_key($address, array_flip(['logradouro', 'bairro', 'localidade', 'uf', 'cep'])))])
+        );
     }
 
     private function getCoordenatesGoogleApi($addressFormated)
