@@ -10,7 +10,7 @@ use App\Http\Services\Location\GeocodingService;
 use App\Http\Services\Location\ViaCepService;
 use App\Models\Contato;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\{JsonResponse};
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 class ContatoController extends Controller
