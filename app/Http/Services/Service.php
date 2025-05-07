@@ -19,7 +19,7 @@ abstract class Service
 
     abstract public function create(Request $request): bool;
 
-    abstract public function findOrFail($id): Model | bool;
+    abstract public function find($id): Model | bool;
 
-    abstract public function update(Request $request): bool;
+    abstract public function update(Request $request, int $id): bool;
 }
