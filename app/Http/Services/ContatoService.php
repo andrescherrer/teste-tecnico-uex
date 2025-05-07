@@ -38,15 +38,14 @@ class ContatoService extends Service
         $this->setLoggedUserToRequest($request);
 
         try {
-            $this->model->create($request->all());
-            return true;
+            return $this->model->create($request->all());            
         } catch(\Throwable $th) {
             Log::critical("Erro ao salvar Contato: ". $th->getMessage());
             return false;
         }        
     }
 
-    public function findOrFail($id): Model|bool
+    public function find($id): Model|bool
     {
         try {
             return $this->model->where('id', $id)->where('user_id', request()->user()->id)->first();
@@ -57,13 +56,24 @@ class ContatoService extends Service
         }        
     }
 
-    public function update(Request $request): bool
+    public function update(Request $request, int $id): bool
     {
-        $this->setLoggedUserToRequest($request);
+        $request->merge([
+            'user_id' => $request->user()->id
+        ]);
 
         try {
-            $this->model->update($request->validated());
-            return true;
+            
+            $contato = $this->model->where('id', $id)
+                             ->where('user_id', $request->user()->id)
+                             ->first();
+
+            if (!$contato) {
+                return false;
+            }
+                    
+            return $contato->update($request->all());
+
         } catch(\Throwable $th) {
             Log::critical("Erro ao atualizar Contato: ". $th->getMessage());
             return false;
