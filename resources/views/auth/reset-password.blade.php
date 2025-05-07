@@ -10,7 +10,7 @@
     <div class="w-fulL bg-white rounded-lg shadow-md p-8">
         <div class="text-center mb-8">
             <h1 class="text-2xl font-bold text-gray-800">Use esses dados no enpoint:</h1>
-            <p>api/reset-password</p>
+            <p>api/v1/reset-password</p>
         </div>
 
         <div class="text-center mb-8">
