@@ -55,33 +55,33 @@ Na raiz do projeto contém um arquivo endpoints.json para ser utilizado em algum
 ## Auth:
 
 ### Criar conta
-- POST /v1/signup
+- POST /api/v1/signup
 - body: name, email, password, password_confirmation
 
 ### Logar na conta
-- POST /v1/signin
+- POST /api/v1/signin
 - body: email, password
 
 ### Deslogar
-- POST /v1/signout
+- POST /api/v1/signout
 - header [Authorization] Bearer token
 
 ### Esqueci a senha
-- POST /v1/forgot-password
+- POST /api/v1/forgot-password
 - body: email (cadastrado)
 
 ### Reset senha
-- POST /v1/reset-password
+- POST /api/v1/reset-password
 - body: email, token, password, password_confirmation
 
 ## Account
 ### Remover conta
-- DELETE /v1/user
+- DELETE /api/v1/user
 - body: password
 
 ## Contatos
 ### Index
-- GET /v1/contatos
+- GET /api/v1/contatos
 - header [Authorization] Bearer token
 - params: 
 - * cpf, nome (utilizado para pesquisar) 
@@ -90,15 +90,15 @@ Na raiz do projeto contém um arquivo endpoints.json para ser utilizado em algum
 - * per_page (quantidade de paginas ou default: 20)
 
 ### Store
-- POST /v1/contatos
+- POST /api/v1/contatos
 - body: nome, cpf, telefone, cep, numero, complemento (não obrigatório)
 
 ### Show
-- GET /v1/contatos/{id} (retorna contato somente se pertencer ao usuario logado)
+- GET /api/v1/contatos/{id} (retorna contato somente se pertencer ao usuario logado)
 
 ### PUT
-- PUT /v1/contatos/{id}
+- PUT /api/v1/contatos/{id}
 - body: nome, cpf, telefone, cep, numero, complemento (não obrigatório)
 
 ### Destroy
-- DELETE /v1/contatos/{id}
+- DELETE /api/v1/contatos/{id}
