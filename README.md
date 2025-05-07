@@ -6,7 +6,8 @@ Siga os procedimentos abaixo para subir o projeto:
 git clone git@github.com:andrescherrer/teste-tecnico-uex.git contatos
 ```
 
-O projeto foi desenvolvido usando Laravel Sail, sendo assim, é necessário ter o docker instalado e executar a linha abaixo:
+O projeto foi desenvolvido usando Laravel Sail, sendo assim, é necessário ter o docker instalado.
+Executar a linha abaixo para baixar as imagens e criar os containers.
 
 ```bash
 docker run --rm \
@@ -29,12 +30,13 @@ Subir o projeto
 sail up -d --build
 ```
 
-Rodar o comando para criar e popular o banco de dados
+Rodar o comando para criar o banco de dados e a tabelas
 ```bash
 sail artisan migrate
 ```
 
-Se o comando acima falhar, rode o comando abaixo para pegar o IP do container do banco de dados e altere o DB_HOST com a saída deste comando.
+Se o comando acima falhar, rode o comando abaixo para pegar o IP do container do banco de dados. 
+Altere o DB_HOST com a saída deste comando.
 
 ```bash
 docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' contatos-database-1
@@ -46,3 +48,57 @@ Caso apareça a logo do Laravel 12, os serviços estão configurados.
 O Mailpit também está disponível nessa instalação. Ele sevirá de auxílio para consultar os e-mails quando o usuário solicitar troca de senha.
 
 Acesse: http://localhost:8025
+
+Na raiz do projeto contém um arquivo endpoints.json para ser utilizado em algum client http.
+
+# Endpoints:
+## Auth:
+
+### Criar conta
+- POST /v1/signup
+- body: name, email, password, password_confirmation
+
+### Logar na conta
+- POST /v1/signin
+- body: email, password
+
+### Deslogar
+- POST /v1/signout
+- header [Authorization] Bearer token
+
+### Esqueci a senha
+- POST /v1/forgot-password
+- body: email (cadastrado)
+
+### Reset senha
+- POST /v1/reset-password
+- body: email, token, password, password_confirmation
+
+## Account
+### Remover conta
+- DELETE /v1/user
+- body: password
+
+## Contatos
+### Index
+- GET /v1/contatos
+- header [Authorization] Bearer token
+- params: 
+- * cpf, nome (utilizado para pesquisar) 
+- * order_by (campo da tabela contatos)
+- * order_direction ( asc, desc )
+- * per_page (quantidade de paginas ou default: 20)
+
+### Store
+- POST /v1/contatos
+- body: nome, cpf, telefone, cep, numero, complemento (não obrigatório)
+
+### Show
+- GET /v1/contatos/{id} (retorna contato somente se pertencer ao usuario logado)
+
+### PUT
+- PUT /v1/contatos/{id}
+- body: nome, cpf, telefone, cep, numero, complemento (não obrigatório)
+
+### Destroy
+- DELETE /v1/contatos/{id}
