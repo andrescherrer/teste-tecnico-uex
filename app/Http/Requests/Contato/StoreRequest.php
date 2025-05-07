@@ -9,7 +9,12 @@ class StoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return auth()->check();
+    }
+
+    protected function failedAuthorization()
+    {
+        throw new \Illuminate\Auth\Access\AuthorizationException('Você precisa estar logado para realizar esta ação.');
     }
 
     public function rules(): array
