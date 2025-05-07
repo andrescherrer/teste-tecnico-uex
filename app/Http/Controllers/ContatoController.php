@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Contato\IndexRequest;
-use App\Http\Requests\Contato\StoreRequest;
-use App\Http\Resources\Contato\IndexCollection;
-use App\Http\Resources\Contato\ShowResource;
+use App\Http\Requests\Contato\{IndexRequest, StoreRequest, UpdateRequest};
+use App\Http\Resources\Contato\{IndexCollection, ShowResource};
 use App\Http\Services\ContatoService;
 use App\Http\Services\Document\CpfValidatorService;
 use App\Http\Services\Location\GeocodingService;
 use App\Http\Services\Location\ViaCepService;
 use App\Models\Contato;
-use Illuminate\Http\{JsonResponse, Request};
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\{JsonResponse};
 use Illuminate\Support\Facades\Log;
 
 class ContatoController extends Controller
@@ -33,77 +32,119 @@ class ContatoController extends Controller
     ) {}
 
     public function index(IndexRequest $request): IndexCollection | JsonResponse
-    {
-        $message = $this->arrayErrorMessage['index'];
-        $status = JsonResponse::HTTP_BAD_REQUEST;
-        
+    {       
         try {            
             return new IndexCollection($this->service->filter($request));
-        } catch (\Throwable $th) {
-            Log::critical($message .  $th->getMessage());
-            return response()->json(['message' => $message, 'error' => $th->getMessage()], $status);
+        } catch (\Exception $e) {
+            Log::critical($this->arrayErrorMessage['index'] .  $e->getMessage());
+            return response()->json(
+                [
+                    'message' => $this->arrayErrorMessage['index'], 
+                    'error' => $e->getMessage()
+                ], 
+                JsonResponse::HTTP_BAD_REQUEST
+            );
         }
     }
 
     public function store(StoreRequest $request): JsonResponse
     {
-        $message = $this->arrayErrorMessage['store'];
-        $status = JsonResponse::HTTP_BAD_REQUEST;
-        
         try {
-            if (!$this->validateCPF($request->cpf)) {
-                throw new \Exception('CPF Inválido');
-            }
-
-            if (!$address = $this->validateAddress($request)) {
-                throw new \Exception('CEP Inválido');
-            }
-
-            if (!$addressGoogleMaps = $this->formatAddressGoogleApi($address, $request->numero)) {
-                throw new \Exception('Formato inválido');
-            };
-
-            if(!$coordenates = $this->getCoordenatesGoogleApi($addressGoogleMaps)) {
-                throw new \Exception('Não foi possível encontrar Latitude e Longiture');
-            }
-
-            if(!$request = $this->buildContato($request, $address, $coordenates))
-            {
-                throw new \Exception('Erro ao montar objeto Contato');
-            }
-
-            $contato = $this->service->create($request);
-
-            if (!$contato) {
-                return response()->json(['message' => $message,], $status);
-            } else {
-                return response()->json(['message' => 'Contato criado com sucesso'], JsonResponse::HTTP_CREATED);
-            }
+            $this->validateInputs($request);
             
-        } catch (\Throwable $th) {
-            Log::critical($message .  $th->getMessage());
-            return response()->json(['message' => $message, 'error' => $th->getMessage()], $status);
+            $address = $this->processAddress($request);
+            $coordinates = $this->getCoordinates($address, $request->numero);
+            $contatoData = $this->buildContactData($request, $address, $coordinates);
+            
+            $this->service->create($contatoData);
+
+            return response()->json(
+                [
+                    'success' => true,
+                    'message' => 'Contato criado com sucesso'
+                ],
+                JsonResponse::HTTP_CREATED
+            );
+
+        } catch (\Exception $e) {
+            Log::critical('Falha ao criar contato: ' . $e->getMessage());
+            
+            return response()->json(
+                [
+                    'message' => $this->arrayErrorMessage['store'],
+                    'error' => $e->getMessage()
+                ],
+                JsonResponse::HTTP_BAD_REQUEST
+            );
         }
     }
 
-
-    public function show(Contato $contato)
+    public function show($id): JsonResponse
     {
-        $status = JsonResponse::HTTP_BAD_REQUEST;
-        $message = $this->arrayErrorMessage['show'];
+        try {
+            $contato = $this->service->find($id);
+            
+            return response()->json(
+                [
+                    'success' => true,
+                    'data' => new ShowResource($contato)
+                ]
+            );
+    
+        } catch (ModelNotFoundException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Contato não encontrado',
+                ],
+                JsonResponse::HTTP_NOT_FOUND
+            );
+            
+        } catch (\Exception $e) {
+            Log::critical($this->arrayErrorMessage['show'] .  $e->getMessage());            
 
-        try {    
-            $contato = $this->service->findOrFail($contato->id);
-            return  new ShowResource($contato);
-        } catch (\Throwable $th) {
-            Log::critical($message . $th->getMessage());
-            return response()->json(['message' => $message, 'error' => $th->getMessage()], $status);
-        }        
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => $this->arrayErrorMessage['show'],
+                    'error' => $e->getMessage()
+                ],
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
     }
-
-    public function update(Request $request, Contato $contato)
+    
+    public function update(UpdateRequest $request, int $id): JsonResponse
     {
-        //
+        try {
+            $this->validateInputs($request);
+            
+            $address = $this->processAddress($request);
+            $coordinates = $this->getCoordinates($address, $request->numero);
+            $contatoData = $this->buildContactData($request, $address, $coordinates);
+            
+            $updated = $this->service->update($contatoData, $id);
+
+            if (!$updated) {
+                throw new \Exception('Contato não encontrado para atualização');
+            }
+
+            return response()->json(
+                ['message' => 'Contato atualizado com sucesso'],
+                JsonResponse::HTTP_OK
+            );
+
+        } catch (\Exception $e) {
+            Log::critical('Falha ao atualizar contato: ' . $e->getMessage());
+            
+            return response()->json(
+                [
+                    'message' => $this->arrayErrorMessage['update'],
+                    'error' => $e->getMessage()
+                ],
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
     }
 
     public function destroy(Contato $contato)
@@ -111,15 +152,52 @@ class ContatoController extends Controller
         //
     }
 
-    private function validateCPF($cpf): bool
+    /** Private Methods */
+
+    private function validateInputs(StoreRequest|UpdateRequest $request)
+    {
+        if (!$this->validateCPF($request->cpf)) {
+            throw new \Exception('CPF inválido');
+        }
+    }
+
+    private function validateCPF($cpf)
     {
         return $this->cpfValidatorService->execute($cpf);
+    }
+
+    private function processAddress(StoreRequest|UpdateRequest $request)
+    {
+        $address = $this->validateAddress($request);
+        
+        if (!$address) {
+            throw new \Exception('CEP inválido');
+        }
+        
+        return $address;
     }
 
     private function validateAddress($request)
     {
         $cep = str_replace('-', '', $request->cep);
         return $this->viaCepService->execute($cep);
+    }
+
+    private function getCoordinates(array $address, string $number)
+    {
+        $formattedAddress = $this->formatAddressGoogleApi($address, $number);
+        
+        if (!$formattedAddress) {
+            throw new \Exception('Formato de endereço inválido');
+        }
+
+        $coordinates = $this->getCoordenatesGoogleApi($formattedAddress);
+        
+        if (!$coordinates) {
+            throw new \Exception('Não foi possível obter coordenadas geográficas');
+        }
+
+        return $coordinates;
     }
 
     private function formatAddressGoogleApi($address, $numero)
@@ -135,15 +213,28 @@ class ContatoController extends Controller
         return $this->geocodingService->execute($addressFormated);
     }
 
+    private function buildContactData(StoreRequest|UpdateRequest $request, array $address, array $coordinates)
+    {
+        $contatoData = $this->buildContato($request, $address, $coordinates);
+        
+        if (!$contatoData) {
+            throw new \Exception('Falha ao montar dados do contato');
+        }
+
+        return $contatoData;
+    }
+
     private function buildContato($request, $address, $coordenates)
     {
-        $request->query->add(['logradouro' => $address['logradouro']]);
-        $request->query->add(['bairro' => $address['bairro']]);
-        $request->query->add(['localidade' => $address['localidade']]);
-        $request->query->add(['uf' => $address['uf']]);
-        $request->query->add(['estado' => $address['estado']]);
-        $request->query->add(['latitude' => $coordenates['lat']]);
-        $request->query->add(['longitude' => $coordenates['lng']]);
+        $request->merge([
+            'logradouro' => $address['logradouro'],
+            'bairro' => $address['bairro'],
+            'localidade' => $address['localidade'],
+            'uf' => $address['uf'],
+            'estado' => $address['estado'],
+            'latitude' => $coordenates['lat'],
+            'longitude' => $coordenates['lng'],
+        ]);
 
         return $request;
     }
