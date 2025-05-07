@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Schema;
 
 class ContatoService extends Service
 {
@@ -20,17 +21,28 @@ class ContatoService extends Service
     public function filter(Request $request): LengthAwarePaginator
     {        
         $this->setLoggedUserToRequest($request);
-
-        return $this->model->when(
-            $request->anyFilled([
-                'cpf',
-                'nome',
-                'user_id', 
-            ]), function ($query) use ($request) {
+    
+        $query = $this->model->when(
+            $request->anyFilled(['cpf', 'nome', 'user_id']), 
+            function ($query) use ($request) {
                 $this->functionModelName($request, $query);
-            })
-            ->orderBy('nome')
-            ->paginate($request->per_page ?? 20);
+            }
+        );
+    
+        $orderBy = $request->order_by ?? 'nome';
+        $orderDirection = $request->order_direction ?? 'asc';
+    
+        $orderDirection = in_array(strtolower($orderDirection), ['asc', 'desc']) 
+            ? strtolower($orderDirection) 
+            : 'asc';
+    
+        if (Schema::hasColumn($this->model->getTable(), $orderBy)) {
+            $query->orderBy($orderBy, $orderDirection);
+        } else {
+            $query->orderBy('nome', 'asc');
+        }
+    
+        return $query->paginate($request->per_page ?? 20);
     }
 
     public function create(Request $request): bool
